@@ -1,7 +1,7 @@
 # HostsEditor
 Simple .net core 6 WPF app for editing the Windows hosts file.
 
-[app screenshot](https://user-images.githubusercontent.com/845115/191452507-bd0b33a6-14dd-4d6a-a698-6822a66275ce.png)
+![screenshot](https://user-images.githubusercontent.com/845115/191452507-bd0b33a6-14dd-4d6a-a698-6822a66275ce.png)
 
 ## How it works
 One think you may notice when you open the app is it doesn't display any existing host records.
