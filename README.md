@@ -4,7 +4,7 @@ Simple .net core 6 WPF app for editing the Windows hosts file.
 ![screenshot](https://user-images.githubusercontent.com/845115/191452507-bd0b33a6-14dd-4d6a-a698-6822a66275ce.png)
 
 ## How it works
-One think you may notice when you open the app is it doesn't display any existing host records.
+One thing you may notice when you open the app is it doesn't display any existing host records.
 The program works by adding its own section to the hosts file within which it adds and removes records created with the UI.
 
 It does not touch anything outside the section it creates, but any changes created whilst the app is running outside that section will be overwritten when it saves.
