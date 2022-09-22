@@ -3,57 +3,35 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net;
-using System.Text;
 using System.Text.RegularExpressions;
-using System.Threading.Tasks;
-
-namespace HostsEditor
+ 
+namespace HostsEditor.Parsing
 {
-    /// <summary>
-    /// Defines a single line entry in a host file
-    /// </summary>
-    public class HostListItem
-    {
-        /// <summary>
-        /// Whether this line is enabled(not commented out)
-        /// </summary>
-        public bool Enabled { get; set; }
-
-        /// <summary>
-        /// Host IP Entry
-        /// </summary>
-        public string IP { get; set; } = string.Empty;
-
-        /// <summary>
-        /// Host entry
-        /// </summary>
-        public string Host { get; set; } = string.Empty;
-
-        /// <summary>
-        /// User comment for this line
-        /// </summary>
-        public string Comment { get; set; } = string.Empty;
-    }
-
     /// <summary>
     /// Class for parsing and managing hostfile entries within a specific section
     /// </summary>
     public class HostFileParser
     {
-        private readonly string HOST_PATH;
         private const string SECTION_TOP = "#### START HOSTFILEPARSER ####";
         private const string SECTION_BOTTOM = "#### END HOSTFILEPARSER ####";
-        private List<string> _hostData = new();
-        private List<HostListItem> _newData = new();
+        private readonly string HOST_PATH;
+        private readonly Regex _domainRegex;
+        private List<string> _hostData;
+        private List<HostListItem> _newData;
+        
         private int _sectionStart = 0;
         private int _sectionStop = 0;
-
+        
         public HostFileParser()
         {
+            _domainRegex = new(@"^[\w.]+$");
+            _hostData = new();
+            _newData = new();
+
             HOST_PATH = Path.Combine(
-                Environment.GetFolderPath(Environment.SpecialFolder.System), 
-                "drivers", 
-                "etc", 
+                Environment.GetFolderPath(Environment.SpecialFolder.System),
+                "drivers",
+                "etc",
                 "hosts"
             );
         }
@@ -84,7 +62,7 @@ namespace HostsEditor
         public List<HostListItem> GetEntries()
             => _newData;
 
-        
+
         /// <summary>
         /// Adds a new entry to the list and saves the file
         /// </summary>
@@ -115,22 +93,18 @@ namespace HostsEditor
             var entry = _newData
                 .FirstOrDefault(p => p.IP == ip && p.Host.ToLower() == host.ToLower().Trim());
 
-            if(entry != null)
+            if (entry != null)
                 _newData.Remove(entry);
 
             SaveFile();
         }
-        
+
         /// <summary>
         /// Load and parse the host file into a list of models we can work with
         /// </summary>
         /// <exception cref="Exception"></exception>
         public void LoadFile()
         {
-            // For debugging primarily
-            if (!File.Exists(HOST_PATH))
-                File.WriteAllText(HOST_PATH, "");
-
             _hostData = new List<string>();
             _newData = new List<HostListItem>();
 
@@ -145,11 +119,11 @@ namespace HostsEditor
 
             // Locate line numbers for our section
             var start = _hostData.FirstOrDefault(p => p.Contains(SECTION_TOP));
-            if (string.IsNullOrWhiteSpace(start)) 
+            if (string.IsNullOrWhiteSpace(start))
                 throw new Exception("Failed to load HOST file: couldn't locate or create our section header");
 
             var end = _hostData.FirstOrDefault(p => p.Contains(SECTION_BOTTOM));
-            if(string.IsNullOrWhiteSpace(end))
+            if (string.IsNullOrWhiteSpace(end))
                 throw new Exception("Failed to load HOST file: couldn't locate or create our section footer");
 
             _sectionStart = _hostData.IndexOf(start);
@@ -159,7 +133,6 @@ namespace HostsEditor
             var sind = _sectionStart + 1;
             for (var i = sind; i < _sectionStop; i++)
             {
-                // if (_hostData[i].Trim().StartsWith('#')) continue;
                 var parsed = ParseFromString(_hostData[i]);
                 if (parsed == null) continue;
 
@@ -198,9 +171,16 @@ namespace HostsEditor
             var ip = split[0];
             var host = split[1];
 
+            // Validate IP and host are valid
+            if (!IPAddress.TryParse(ip, out _))
+                return null;
+
+            if (!_domainRegex.IsMatch(host))
+                return null;
+
             // Extract comment from the end of the line
             string comment = "";
-            if(split.Length > 2)
+            if (split.Length > 2)
                 comment = string.Join(" ", split.Skip(2));
 
             if (comment.StartsWith("#"))
@@ -221,7 +201,6 @@ namespace HostsEditor
         /// </summary>
         public void SaveFile()
         {
-            // throw new Exception($"{_sectionStart}, {_sectionStop}, {_hostData.Count}"); 25,27,28
             // Get new host OG host data with lines between our sections removed
             var newHostData = new List<string>();
             newHostData.AddRange(_hostData.GetRange(0, _sectionStart + 1));
@@ -229,16 +208,13 @@ namespace HostsEditor
             // Add our entries
             foreach (var entry in _newData)
                 newHostData.Add($"{(entry.Enabled ? " " : "#")}   {entry.IP}   {entry.Host} #{entry.Comment}");
-            
+
             // Add the rest of the entries
             newHostData.AddRange(_hostData.GetRange(_sectionStop, _hostData.Count - _sectionStop));
 
             // Save hosts file
             var newFileData = string.Join('\n', newHostData);
             File.WriteAllText(HOST_PATH, newFileData);
-
-            // Reload new file data
-            // LoadFile();
         }
     }
 }
