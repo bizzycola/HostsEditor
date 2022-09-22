@@ -40,7 +40,7 @@ namespace HostsEditor
     /// </summary>
     public class HostFileParser
     {
-        private const string HOST_PATH = "C:\\Windows\\System32\\drivers\\etc\\hosts";
+        private readonly string HOST_PATH;
         private const string SECTION_TOP = "#### START HOSTFILEPARSER ####";
         private const string SECTION_BOTTOM = "#### END HOSTFILEPARSER ####";
         private List<string> _hostData = new();
@@ -50,7 +50,12 @@ namespace HostsEditor
 
         public HostFileParser()
         {
-
+            HOST_PATH = Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.System), 
+                "drivers", 
+                "etc", 
+                "hosts"
+            );
         }
 
         /// <summary>
